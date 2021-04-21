@@ -1,2 +1,3 @@
-# NoiseFourier.jl
-Discretization schemes using Fourier series for Random Dynamical Systems on the Torus
+# NoiseFourier
+
+[![Build Status](https://github.com/orkolorko/NoiseFourier.jl/workflows/CI/badge.svg)](https://github.com/orkolorko/NoiseFourier.jl/actions)
