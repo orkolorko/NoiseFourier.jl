@@ -62,10 +62,55 @@ noise_matrix(Nx, σ) = Diagonal([[exp(-(k*σ)^2/2) for k in 0:Nx]; [exp(-(k*σ)^
 
 truncation_error(Nx, σ) = exp(-(Nx*σ)^2/2)/(Nx*σ*sqrt(2*pi))
 
-#function norm_bound(Q)
-#    T = Hermitian(Q'*Q)    
-#end
-    
+function norm_2_estimator_nonrig(M; n_it= 10)
+    n, m = size(M)
+    @assert n==m
+    v = ones(n-1)
+    N = M[2:end, 2:end]
 
+    start_norm =  norm(v, 2)
+    
+    for i in 1:n_it
+        v = N'*(N*v)
+        v = v/norm(v,2)
+    end
+    w = v
+
+    v = N*v
+    
+    return abs(v'*v), w/norm(w,2)
+end    
+
+using IntervalArithmetic, IntervalRootFinding
+
+widen(x::T, fatten) where {T} = x+2.0^(-fatten)*Interval{T}(-1, 1)
+widen(x::Complex{T}, fatten) where {T} = x+2.0^(-fatten)*(Interval{T}(-1, 1)+im*Interval{T}(-1, 1))
+
+function Yamamoto_certify(M, λ, v; fatten = 10)
+    N = M[2:end, 2:end]
+    F(λ, v) = [N'*N*v-λ*v; v'*v-1]
+    v_fat = widen.(v, fatten)
+    lam = widen(λ, fatten)
+    
+    DF(λ, v) = [N'*N-λ*I -v;
+                v'          0]
+
+    w = [λ; v] - DF(lam, v_fat)\F(λ, v)
+    @info w[1], lam
+    return (abs(w[1])).hi
+end
+
+function RigorousNorm(M; k = 10)
+   A = M
+   n, m = size(M)
+   norms = zeros(Float64, k)
+   for i in 1:k
+       λ, v = norm_2_estimator_nonrig(A)
+       @info λ
+       norms[i] = Yamamoto_certify(A, λ, v; fatten = 100)
+       A = M*A
+   end     
+   return norms, sqrt(n-1)*norms
+end
 
 end
