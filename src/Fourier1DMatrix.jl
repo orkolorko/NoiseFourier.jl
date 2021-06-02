@@ -110,7 +110,7 @@ function RigorousNorm(M; k = 10)
        norms[i] = Yamamoto_certify(A, λ, v; fatten = 100)
        A = M*A
    end     
-   return norms, sqrt(n-1)*norms
+   return norms, sqrt(n-1)*norms #check to make it rigorous
 end
 
 end
