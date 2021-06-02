@@ -2,7 +2,8 @@ using LinearAlgebra, SparseArrays
 
 module Fourier1D
 using ..FourierBasis: inverse_unidimensional_index, ϕ, purge
-export assemble_1D_matrix, noise_matrix, truncation_error
+export assemble_matrix, noise_matrix, truncation_error, rigorous_norm 
+export evaluate_trig_polynomial, abscissas
 
 function restrictfft!(new::Vector, orig::Vector, Nx)
     FFTNx = length(orig)
@@ -18,8 +19,20 @@ function extendfft(orig::Vector, FFTNx)
 end
 
 using FFTW, SparseArrays, LinearAlgebra
+"""
+assemble_matrix(T, Nx; FFTNx, x_0, x_1, ϵ)
 
-function assemble_1D_matrix(T, Nx; FFTNx = 1024, x_0 = 0, x_1 = 1, ϵ = 2^-30) 
+This function assembles the matrix of the transfer operator of T using the FFT
+
+Arguments:
+- T : the dynamic
+- Nx : the truncation frequence
+- FFTNx : the number of points used to compute the FFT
+- x_0 : left endpoint of the domain of T, defaults to 0
+- x_1 : right endpoint of the domain of T, defaults to 1
+- ϵ : the purge threshold, under this threshold the entries are set to 0
+"""
+function assemble_matrix(T, Nx; FFTNx = 1024, x_0 = 0, x_1 = 1, ϵ = 2^-30) 
     
     dx = [x_0+i*(x_1-x_0)/FFTNx for i in 0:FFTNx-1]; 
     
@@ -58,9 +71,24 @@ function assemble_1D_matrix(T, Nx; FFTNx = 1024, x_0 = 0, x_1 = 1, ϵ = 2^-30)
     return M
 end
 
-noise_matrix(Nx, σ) = Diagonal([[exp(-(k*σ)^2/2) for k in 0:Nx]; [exp(-(k*σ)^2/2) for k in -Nx:-1]])
+"""
+noise_matrix(σ, Nx)
 
-truncation_error(Nx, σ) = exp(-(Nx*σ)^2/2)/(Nx*σ*sqrt(2*pi))
+returns the matrix of the (periodic) convolution operator with a Gaussian of average 0
+and variance σ in the Fourier basis, truncated at frequence Nx 
+(Check what happens when we change x_0 and x_1, probably rescaling σ)
+
+"""
+noise_matrix(σ, Nx) = Diagonal([[exp(-(k*σ)^2/2) for k in 0:Nx]; [exp(-(k*σ)^2/2) for k in -Nx:-1]])
+
+"""
+truncation_error(σ, Nx)
+
+This function returns the truncation error when truncating frequencies at Nx
+when the Gaussian has variance σ
+(check the rescaling)
+"""
+truncation_error(σ, Nx) = exp(-(Nx*σ)^2/2)/(Nx*σ*sqrt(2*pi))
 
 function norm_2_estimator_nonrig(M; n_it= 10)
     n, m = size(M)
@@ -95,22 +123,65 @@ function Yamamoto_certify(M, λ, v; fatten = 10)
     DF(λ, v) = [N'*N-λ*I -v;
                 v'          0]
 
-    w = [λ; v] - DF(lam, v_fat)\F(λ, v)
-    @info w[1], lam
+    w = [lam; v_fat]
+    w0 = [λ; v] - DF(lam, v_fat)\F(λ, v)
+    
+    
+    w = [λ; v] - DF(w0[1], w0[2:end])\F(λ, v)
+    
+    #t = intersect( abs(w0[1]), abs(w[1]))
+    
     return (abs(w[1])).hi
 end
 
-function RigorousNorm(M; k = 10)
+using IntervalArithmetic
+
+upper(x::Interval) = x.hi
+
+"""
+rigorous_norm(M; k = 10)
+
+Computes the L² and L∞ norm of the powers of M|_V₀ up to the power k.
+The algorithm first computes a numeric estimate of the top Singular Value
+and then certifies it by an Interval Newton step
+
+Outputs: (v2, v∞)
+- v₂ : it is the vector with the rigorous bounds on the L² norm
+- v∞ : it is the vector with the rigorous bounds on the L∞ norm;
+       these are obtained by observing that
+       ||f||₂ = ||w||₂, 
+       where w is the vector of the Fourier coefficients of the trigonometric polynomial f
+       ||f||₂ <= ||f||∞ <= ∑ |w_i| <= √n*||f||₂  
+       so
+       ||M||∞ <= √n *||M||₂
+"""
+function rigorous_norm(M; k = 10)
    A = M
    n, m = size(M)
    norms = zeros(Float64, k)
    for i in 1:k
        λ, v = norm_2_estimator_nonrig(A)
-       @info λ
+       #@info λ
        norms[i] = Yamamoto_certify(A, λ, v; fatten = 100)
        A = M*A
    end     
-   return norms, sqrt(n-1)*norms #check to make it rigorous
+   return norms, upper.(sqrt(Interval(n-1))*Interval.(norms)) #check to make it rigorous
 end
+
+"""
+evaluate_trig_polynomial(v; FFTNx = 16384)
+
+Extends a vector v to size FFTNx (padding with zeros), and then takes the real part of the
+inverse fourier transform, this gives us the value of IFFT(v) at FFTNx points.
+Useful for plots... beware the fact that when plotting you need to give abscissas
+"""
+evaluate_trig_polynomial(v; FFTNx = 16384) = real.(ifft(extendfft(v, FFTNx)))
+
+"""
+Returns the abscissas for plotting, i.e., FFTNx equispaced points between x_0 and x_1
+"""
+abscissas(x_0, x_1, FFTNx) = [x_0+(i-1)*(x_1-x_0)/FFTNx for i in 1:FFTNx]
+
+
 
 end

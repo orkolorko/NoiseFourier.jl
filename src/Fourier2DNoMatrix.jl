@@ -1,3 +1,0 @@
-using IntervalArithmetics
-using IntervalRootFinding
-
