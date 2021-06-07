@@ -90,7 +90,12 @@ when the Gaussian has variance σ
 """
 truncation_error(σ, Nx) = exp(-(Nx*σ)^2/2)/(Nx*σ*sqrt(2*pi))
 
-function norm_2_estimator_nonrig(M; n_it= 10)
+
+"""
+This function computes a candidate for the top singular value
+of M|_{V_0} square, i.e., it returns λ^2 and the associated singular vector 
+"""
+function norm_2_estimator_square_nonrig(M; n_it= 10)
     n, m = size(M)
     @assert n==m
     v = ones(n-1)
@@ -134,6 +139,25 @@ function Yamamoto_certify(M, λ, v; fatten = 10)
     return (abs(w[1])).hi
 end
 
+"""
+This function uses the classical bound, cited in
+
+RESIDUAL BOUNDS ON APPROXIMATE EIGENSYSTEMS OF NONNORMAL MATRICES*
+W. KAHAN, B. N. PARLETT AND E. JIANGt
+
+Theorem 1
+
+"""
+function faster_certify(A, λ, v)
+    N = A[2:end, 2:end]
+    w = Interval.(v)
+    ν = Interval(λ)
+    @info λ
+    ρ = norm(N'*N*w-ν*w, 2)/norm(w, 2)
+    ν = hull(-ρ, ρ) + λ
+    return ν
+end
+
 using IntervalArithmetic
 
 upper(x::Interval) = x.hi
@@ -158,14 +182,17 @@ Outputs: (v2, v∞)
 function rigorous_norm(M; k = 10)
    A = M
    n, m = size(M)
-   norms = zeros(Float64, k)
+   norms = zeros(Interval{Float64}, k)
    for i in 1:k
-       λ, v = norm_2_estimator_nonrig(A)
+       λ, v = norm_2_estimator_square_nonrig(A)
        #@info λ
-       norms[i] = Yamamoto_certify(A, λ, v; fatten = 100)
+       #norms[i] = Yamamoto_certify(A, λ, v; fatten = 100)
+       norms[i] = sqrt(faster_certify(A, λ, v))
        A = M*A
    end     
-   return norms, upper.(sqrt(Interval(n-1))*Interval.(norms)) #check to make it rigorous
+   rescale = sqrt(Interval(n-1))
+   @info "rescale", rescale
+   return norms, rescale*norms #check to make it rigorous
 end
 
 """
