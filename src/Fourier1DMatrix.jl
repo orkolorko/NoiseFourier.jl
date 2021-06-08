@@ -32,7 +32,7 @@ Arguments:
 - x_1 : right endpoint of the domain of T, defaults to 1
 - ϵ : the purge threshold, under this threshold the entries are set to 0
 """
-function assemble_matrix(T, Nx; FFTNx = 1024, x_0 = 0, x_1 = 1, ϵ = 2^-30) 
+function assemble_matrix(T, Nx; FFTNx = 2048, x_0 = 0, x_1 = 1, ϵ = 2^-30) 
     
     dx = [x_0+i*(x_1-x_0)/FFTNx for i in 0:FFTNx-1]; 
     
