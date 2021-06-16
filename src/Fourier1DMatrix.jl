@@ -1,4 +1,4 @@
-using LinearAlgebra, SparseArrays
+using LinearAlgebra, SparseArrays, IntervalArithmetic, IntervalRootFinding, Plots
 
 module Fourier1D
 using ..FourierBasis: inverse_unidimensional_index, ϕ, purge
@@ -152,7 +152,7 @@ function faster_certify(A, λ, v)
     N = A[2:end, 2:end]
     w = Interval.(v)
     ν = Interval(λ)
-    @info λ
+    #@info λ
     ρ = norm(N'*N*w-ν*w, 2)/norm(w, 2)
     ν = hull(-ρ, ρ) + λ
     return ν
@@ -179,7 +179,7 @@ Outputs: (v2, v∞)
        so
        ||M||∞ <= √n *||M||₂
 """
-function rigorous_norm(M; k = 10)
+function rigorous_norm(M; k = 1000)
    A = M
    n, m = size(M)
    norms = zeros(Interval{Float64}, k)
