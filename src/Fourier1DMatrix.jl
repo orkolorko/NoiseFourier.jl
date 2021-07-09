@@ -12,6 +12,13 @@ function restrictfft!(new::Vector, orig::Vector, Nx)
     return new
 end 
 
+function arb_restrictfft(x,y, Nx)
+    FFTNx = length(y)
+    x[1:Nx+1] =  y[1:Nx+1]
+    x[Nx+1:2*Nx+1] = y[FFTNx-Nx:FFTNx]
+    return x
+end 
+
 function extendfft(orig::Vector, FFTNx) 
     N = length(orig)
     Nx = (N-1)÷ 2 
@@ -71,6 +78,71 @@ function assemble_matrix(T, Nx; FFTNx = 2048, x_0 = 0, x_1 = 1, ϵ = 2^-30)
     return M
 end
 
+using ArbNumerics
+
+"""
+assemble_matrix_high_precision(T, Nx; FFTNx, x_0, x_1, ϵ, prec)
+
+This function assembles the matrix of the transfer operator of T using the FFT in high precision, using ArbNumerics
+
+Arguments:
+- T : the dynamic
+- Nx : the truncation frequence
+- FFTNx : the number of points used to compute the FFT
+- x_0 : left endpoint of the domain of T, defaults to 0
+- x_1 : right endpoint of the domain of T, defaults to 1
+- ϵ : the purge threshold, under this threshold the entries are set to 0
+- prec : the internal working precision (which is the same as the displayed precision with setextrabits(0)) to a given number of bits, defaults to 1000
+"""
+function assemble_matrix_high_precision(T, Nx; FFTNx = 2048, x_0 = 0, x_1 = 1, ϵ = 2^-30, prec = 300) 
+    setextrabits(0)
+    setprecision(ArbReal, bits = prec)
+    setprecision(ArbComplex, bits = prec)
+
+    dx = [ArbReal(x_0+i*(x_1-x_0)/FFTNx) for i in 0:FFTNx-1]; 
+    
+    Lx = ArbComplex(abs(x_1-x_0))
+    
+    one = [ArbComplex(1) for x in dx]
+
+    #P = plan_fft(one)
+    
+    Tx = [ArbComplex((T(x))) for x in dx]
+
+    N = (2*Nx+1) # we are taking Nx positive and negative frequencies and the 0 frequency
+    
+    M = ArbNumerics.ArbComplexMatrix(zeros(ArbComplex,(2*Nx+1, 2*Nx+1)))
+    
+    observablevalue = [ArbComplex(0) for s in 1:FFTNx]
+    onedtransform = [ArbComplex(0) for s in 1:FFTNx]
+    
+
+    for i in 1:2*Nx+1    
+        l = inverse_unidimensional_index(i, Nx) # the index in the form [0, ..., Nx, -Nx, ..., -1]
+        
+        for (ind, val) in pairs(Tx)
+            observablevalue[ind] = ArbComplex(ϕ(l, val; L=Lx)) #da aggiustare
+        end
+        onedtransform = ArbNumerics.dft(observablevalue)
+        #???
+        for i in 1:FFTNx
+            if onedtransform[i] == NaN +  NaN*im
+                onedtransform[i]  =  0
+            end
+        end
+        
+        new = [ArbComplex(0) for s in 1:2*Nx+1]
+        new = arb_restrictfft(new, onedtransform, Nx)
+
+        for (ind, val) in pairs(new)
+                if abs(val)!= 0
+                    # this is the adjoint matrix of the Koopman operator
+                    M[i, ind] = conj(val)/FFTNx
+                end
+        end
+    end
+    return M
+end
 """
 noise_matrix(σ, Nx)
 
@@ -211,4 +283,4 @@ abscissas(x_0, x_1, FFTNx) = [x_0+(i-1)*(x_1-x_0)/FFTNx for i in 1:FFTNx]
 
 
 
-end
+end      
