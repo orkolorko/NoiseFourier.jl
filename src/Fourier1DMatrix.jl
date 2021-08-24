@@ -3,7 +3,7 @@
 module Fourier1D
 using ..FourierBasis: inverse_unidimensional_index, ϕ, purge
 
-using LinearAlgebra, SparseArrays, IntervalArithmetic
+using LinearAlgebra, SparseArrays, IntervalArithmetic, ProgressMeter
 using FastTransforms, FFTW
 
 export assemble_matrix, noise_matrix, truncation_error, rigorous_norm 
@@ -158,9 +158,9 @@ function assemble_matrix(D, Nx; FFTNx = 2048, x_0 = 0, x_1 = 1, T = Float64)
     rel_err_fft = (t ⊗₊ η) ⊘₊(1.0 ⊖₋ η)
     f_FFTNx = Float64(FFTNx)
     norm_FFT_normalized_2 = 1.0 ⊘₊(sqrt(f_FFTNx, RoundUp))
-    
+    l2error = 0.0    
 
-    for i in 1:2*Nx+1    
+    @showprogress for i in 1:2*Nx+1    
         l = inverse_unidimensional_index(i, Nx) # the index in the form [0, ..., Nx, -Nx, ..., -1]
         
         for (ind, val) in pairs(Dx)

@@ -655,9 +655,9 @@ uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
 [[ProgressMeter]]
 deps = ["Distributed", "Printf"]
-git-tree-sha1 = "6e9c89cba09f6ef134b00e10625590746ba1e036"
+git-tree-sha1 = "afadeba63d90ff223a6a48d2009434ecee2ec9e8"
 uuid = "92933f4c-e287-5a05-a399-4b506db050ca"
-version = "1.5.0"
+version = "1.7.1"
 
 [[Pseudospectra]]
 deps = ["Arpack", "Colors", "LinearAlgebra", "PlotUtils", "Printf", "ProgressMeter", "Requires", "SparseArrays"]
