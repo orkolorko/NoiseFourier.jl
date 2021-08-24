@@ -185,7 +185,7 @@ function assemble_matrix(D, Nx; FFTNx = 2048, x_0 = 0, x_1 = 1, T = Float64)
                 end
         end
     end
-    return M, l2error ⊗₊ sqrt_round(Float64(N),up)
+    return M, l2error ⊗₊ sqrt_round(Float64(N), RoundUp)
 end
 
 # using ArbNumerics
