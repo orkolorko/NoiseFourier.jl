@@ -115,6 +115,7 @@ Input:
     n: ||M-R||_2 where R is the interval of matrix that contains M 
 """
 function assemble_matrix(D, Nx; FFTNx = 2048, x_0 = 0, x_1 = 1, T = Float64) 
+        
     I = Interval{T}
     dx = [I(x_0)+I(i)*(I(x_1)-I(x_0))/FFTNx for i in 0:FFTNx-1]; 
     
@@ -360,6 +361,8 @@ function rigorous_norm(M; k = 1000)
        #norms[i] = Yamamoto_certify(A, λ, v; fatten = 100)
        norms[i] = sqrt(faster_certify(A, λ, v))
        A = M*A
+       j = j+1
+       @info(j)
    end     
    rescale = sqrt(Interval(n-1))
    @info "rescale", rescale
