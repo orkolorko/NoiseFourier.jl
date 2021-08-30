@@ -354,12 +354,15 @@ function rigorous_norm(M; k = 1000)
    A = M
    n, m = size(M)
    norms = zeros(Interval{Float64}, k)
+   j = 0
    for i in 1:k
        λ, v = norm_2_estimator_square_nonrig(A)
        #@info λ
        #norms[i] = Yamamoto_certify(A, λ, v; fatten = 100)
        norms[i] = sqrt(faster_certify(A, λ, v))
        A = M*A
+       j = j+1
+       @info(j)
    end     
    rescale = sqrt(Interval(n-1))
    @info "rescale", rescale
