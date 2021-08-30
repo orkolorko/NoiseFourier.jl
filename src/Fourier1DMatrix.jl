@@ -354,7 +354,7 @@ function rigorous_norm(M; k = 1000)
    A = M
    n, m = size(M)
    norms = zeros(Interval{Float64}, k)
-   for i in 1:k
+   @showprogress for i in 1:k
        λ, v = norm_2_estimator_square_nonrig(A)
        #@info λ
        #norms[i] = Yamamoto_certify(A, λ, v; fatten = 100)
