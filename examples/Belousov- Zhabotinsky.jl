@@ -1,4 +1,4 @@
-using ArbNumerics
+using ArbNumerics, Plots
 prec = setprecision(BigFloat, 256)
 
 a = BigFloat(0.506073569036822351319599371053047956980141736828203749380990114218225638827)
@@ -23,12 +23,11 @@ end
 #end
 
 T(0.2)
-
-typeof(T(0.2))
+#typeof(T(0.2))
 ##
 
-Size = 128
-noise_size = 0.1
+Size = 256
+noise_size = 0.05
 
 P, gamma = NoiseFourier.Fourier1D.assemble_matrix(T, Size; x_0 = 0, x_1 = 1, T = BigFloat)
 ##
@@ -64,7 +63,7 @@ D1 = NoiseFourier.Fourier1D.noise_matrix(noise_size, Size)
 M1 = D1*P1
 v2, vinf = NoiseFourier.Fourier1D.rigorous_norm(M1, k=500)
 ##
-print(asd)
+#print(asd)
 print(v2)
 ##
 
@@ -79,17 +78,20 @@ function discr_error(v)
 end
 
 ##
-#Power method, (NON TORNA?)
+discr_error(v2)
+##
+
+#Power method
 prec = setprecision(BigFloat, 256)
 v = zeros(2*Size+1)
-v[2] = BigFloat(1.0)
+v[1] = BigFloat(1.0)
 for i in 1:1000
     v = M * v
     v /= norm(v,2)
 end
 lambda = abs(adjoint(v)*M*v)
 ##
-norm(M*v -v)
+norm(M*v -v,2)
 ##
 #Eigen error
 epsilon = BigFloat(norm(M*v -v,2))
@@ -131,4 +133,6 @@ plot(x,y,ylims=(0,5),fmt = :png)#,xticks=25:5:75)
 #Total error
 err = discr_error(v2) + gamma1 + eigenerr
 ##
-
+print(eigenerr)
+print(discr_error(v2))
+print(gamma1)
