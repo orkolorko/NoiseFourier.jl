@@ -1,26 +1,38 @@
 using ArbNumerics, Plots
 prec = setprecision(BigFloat, 256)
 
-a = BigFloat(0.506073569036822351319599371053047956980141736828203749380990114218225638827)
-b = BigFloat(0.02328852830307032054478158044023918735669943648088852646123182739831022528)
-c = BigFloat(0.121205692738975111744666848150620569782497212127938371936404761693002104361)
-
-function T(x)
-    if x <= (0.3)
-        return (a+cbrt((x-(1/8))))*exp(-x) + b
-    end
-    return c*(10*x*exp((-10*x)/3))^19 + b
-end
-#a = BigFloat()
+#a = BigFloat(0.506073569036822351319599371053047956980141736828203749380990114218225638827)
+#b = BigFloat(0.02328852830307032054478158044023918735669943648088852646123182739831022528)
+#c = BigFloat(0.121205692738975111744666848150620569782497212127938371936404761693002104361)
 
 #function T(x)
-#   t = a*x*(1-x)
+#    if x <= (0.3)
+#        return (a+cbrt((x-(1/8))))*exp(-x) + b
+#    end
+#    return c*(10*x*exp((-10*x)/3))^19 + b
+#end
+##
+#epsilonc = BigFloat(0.7)
+#tauc = BigFloat(0.8)
+
+#function T(x)
+#    t = x-(epsilonc /(2*pi))*sin(2*pi*x)+tauc
 #    if t < 1
 #        return t
 #    else
-#        return t -1
+#        return t-1
 #    end
 #end
+
+a = BigFloat(3.93)
+function T(x)
+   t = a*x*(1-x)
+    if t < 1
+        return t
+    else
+        return t -1
+    end
+end
 
 T(0.2)
 #typeof(T(0.2))
@@ -86,6 +98,7 @@ prec = setprecision(BigFloat, 256)
 v = zeros(2*Size+1)
 v[1] = BigFloat(1.0)
 for i in 1:1000
+    @info(i)
     v = M * v
     v /= norm(v,2)
 end
@@ -131,8 +144,11 @@ plot(x,y,ylims=(0,5),fmt = :png)#,xticks=25:5:75)
 
 ##
 #Total error
-err = discr_error(v2) + gamma1 + eigenerr
+#err = discr_error(v2) + gamma1 + eigenerr
+##
+print(gamma1)
+
+##
+print(discr_error(v2))
 ##
 print(eigenerr)
-print(discr_error(v2))
-print(gamma1)
