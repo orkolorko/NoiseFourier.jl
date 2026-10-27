@@ -1,5 +1,4 @@
 
-
 module Fourier1D
 using ..FourierBasis: inverse_unidimensional_index, ϕ, purge
 
